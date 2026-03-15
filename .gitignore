@@ -1,0 +1,20 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.pytest_cache/
+
+# Docker
+.docker_data/
+postgres_data/
++
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Note: Do NOT ignore .devcontainer/

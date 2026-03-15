@@ -1,0 +1,31 @@
+# version: '3.8'
+
+services:
+  # 1. The Database
+  db:
+    image: pgvector/pgvector:pg17
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: semantic_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  # 2. The Backend (FastAPI)
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app  # This links your code!
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/semantic_db
+      - AI_API_KEY=${AI_API_KEY}
+    depends_on:
+      - db
+    # This command enables "reload" so the server restarts on save
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload  
+
+volumes:
+  postgres_data:
