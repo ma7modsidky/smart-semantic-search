@@ -10,7 +10,6 @@ def setup_test_env(monkeypatch):
     Forcibly sets environment variables for the duration of the test.
     This prevents the app from trying to connect to the real 'db' host.
     """
-    monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
     monkeypatch.setenv("AI_API_KEY", "test_dummy_key")
 
 client = TestClient(app)
