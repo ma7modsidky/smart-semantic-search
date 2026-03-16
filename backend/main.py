@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict
 from typing import List
 import logging # Added for professional tracking
 
-
+# Triggering CI
 load_dotenv()
 # 1. Define what a Product looks like to the Frontend
 class ProductResponse(BaseModel):
