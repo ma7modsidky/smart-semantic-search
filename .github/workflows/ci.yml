@@ -5,10 +5,13 @@ on:
     branches: [ main ]
     paths:
       - 'backend/**'   # <--- ONLY run if something in the backend folder changed
+  workflow_dispatch:    
   pull_request:
     branches: [ main ]
     paths:
       - 'backend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/ci.yml'
 
 jobs:
   test:
@@ -27,6 +30,8 @@ jobs:
           pip install pytest httpx
 
       - name: Run Tests
+        env:
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
         # We use 'mock' so we don't need a real DB or API Key for CI
         run: |
           cd backend
