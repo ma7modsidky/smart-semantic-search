@@ -32,6 +32,7 @@ jobs:
       - name: Run Tests
         env:
           AI_API_KEY: ${{ secrets.AI_API_KEY }}
+          DATABASE_URL: postgresql://postgres:password@localhost:5432/postgres # Dummy URL
         # We use 'mock' so we don't need a real DB or API Key for CI
         run: |
           cd backend
