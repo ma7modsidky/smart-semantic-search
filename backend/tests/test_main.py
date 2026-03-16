@@ -1,29 +1,70 @@
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch
-from main import app
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+from main import app, get_db
+from models import Base, Product
+
+# 1. Setup an In-Memory SQLite Database for testing
+SQLALCHEMY_DATABASE_URL = "sqlite://" #
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# 2. Dependency override: Tell FastAPI to use our test DB
+def override_get_db():
+    try:
+        db = TestingSessionLocal()
+        yield db
+    finally:
+        db.close()
+
+app.dependency_overrides[get_db] = override_get_db #
 
 client = TestClient(app)
 
-# 1. Test the Health Check (Simple)
+@pytest.fixture(autouse=True)
+def setup_database():
+    """Create tables and a dummy product before each test."""
+    Base.metadata.create_all(bind=engine)
+    db = TestingSessionLocal()
+    # Add one dummy product so the search has something to find
+    dummy_product = Product(
+        name="Test Laptop",
+        description="A high-performance laptop for testing.",
+        embedding=[0.1] * 3072
+    )
+    db.add(dummy_product)
+    db.commit()
+    yield
+    Base.metadata.drop_all(bind=engine)
+
+# --- Tests ---
+
 def test_read_main():
     response = client.get("/")
     assert response.status_code == 200
     assert "Smart Semantic Search" in response.json().get("message", "")
 
-# 2. Test the Search Endpoint (Mocking the AI)
-@patch("main.get_embedding") # This prevents the real AI call
+@patch("main.get_embedding")
 def test_search_endpoint(mock_embedding):
-    # Setup: Tell the mock to return a fake 3072-dim vector
+    # Setup: Mock the AI to return a vector matching our dummy product
     mock_embedding.return_value = [0.1] * 3072
     
-    # Act: Call your search endpoint
+    # Act
     response = client.get("/search?query=laptop")
     
     # Assert
     assert response.status_code == 200
-    assert isinstance(response.json(), list)
-    # Ensure it's returning the Pydantic schema (no embedding field)
-    if len(response.json()) > 0:
-        assert "embedding" not in response.json()[0]
-        assert "name" in response.json()[0]
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) > 0
+    assert data[0]["name"] == "Test Laptop"
+    assert "embedding" not in data[0] # Verify Pydantic schema
