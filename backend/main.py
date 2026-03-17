@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from pydantic import BaseModel, ConfigDict
+from fastapi.middleware.cors import CORSMiddleware
 
 # Import only the Table model and Base to avoid immediate connection
 from models import Product, Base
@@ -46,7 +47,7 @@ def get_db():
     # We create the engine inside the dependency so it doesn't run on module import
     engine = create_engine(database_url)
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    
+
     db = TestingSessionLocal()
     try:
         yield db
@@ -81,6 +82,15 @@ app = FastAPI(
     title="Smart Semantic Search API",
     description="Vector-based search engine powered by Gemini and PGVector",
     version="1.0.0"
+)
+
+# Allow the frontend to communicate with the backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"], # Your Next.js URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.get("/", tags=["Health"])
